@@ -20,10 +20,23 @@ class MainActivity : ComponentActivity() {
         setContent {
             GeoquizTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    GeoQuizScreen(innerPadding = Modifier.padding(innerPadding))
 
                 }
             }
         }
     }
 }
+@Composable
+fun GeoQuizScreen(innerPadding: Modifier) {
 
+}
+
+
+@Preview(showBackground = true)
+@Composable
+fun GeoQuizScreenPreview() {
+    GeoquizTheme {
+        GeoQuizScreen(innerPadding = Modifier)
+    }
+}
