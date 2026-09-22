@@ -67,6 +67,7 @@ fun GeoQuizScreen(innerPadding: Modifier) {
     val currentQuestion = questionList[currentQuestionIndex]
     var isAnswered by remember { mutableStateOf(false) }
     var correctAnswersCount by remember { mutableStateOf(0) }
+    val isLastQuestion = currentQuestionIndex == questionList.size - 1
 
     Column(modifier = innerPadding.fillMaxSize()) {
         TopAppBar(
@@ -76,6 +77,7 @@ fun GeoQuizScreen(innerPadding: Modifier) {
                 titleContentColor = Color.White
             )
         )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -87,9 +89,9 @@ fun GeoQuizScreen(innerPadding: Modifier) {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(24.dp))       // ← ПЕРЕНЕСЕНО
+            Spacer(modifier = Modifier.height(24.dp))
 
-            if (isAnswered == false) {                      // ← ПЕРЕНЕСЕНО
+            if (isAnswered == false) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -118,6 +120,25 @@ fun GeoQuizScreen(innerPadding: Modifier) {
                         colors = ButtonDefaults.buttonColors(containerColor = purpleColor)
                     ) {
                         Text(text = "FALSE")
+                    }
+                }
+            }
+
+            if (isAnswered == true && isLastQuestion == false) {
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Button(
+                        onClick = {
+                            currentQuestionIndex = currentQuestionIndex + 1
+                            isAnswered = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = purpleColor)
+                    ) {
+                        Text(text = "NEXT")
                     }
                 }
             }
