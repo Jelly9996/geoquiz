@@ -73,12 +73,16 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun GeoQuizScreen(innerPadding: Modifier) {
         val purpleColor = Color(0xFF6200EE)
+        val lightPurple = Color(0xFFBB86FC)   // ← СВЕТЛО-ФИОЛЕТОВЫЙ для выбранной
 
         var currentQuestionIndex by remember { mutableStateOf(0) }
         val currentQuestion = questionList[currentQuestionIndex]
         var isAnswered by remember { mutableStateOf(false) }
         var correctAnswersCount by remember { mutableStateOf(0) }
         val isLastQuestion = currentQuestionIndex == questionList.size - 1
+
+        // Какая кнопка была нажата: "TRUE", "FALSE" или null
+        var selectedAnswer by remember { mutableStateOf<String?>(null) }
 
         val snackbarHostState = remember { SnackbarHostState() }
         val coroutineScope = rememberCoroutineScope()
@@ -104,81 +108,101 @@ class MainActivity : ComponentActivity() {
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
-
-                if (isAnswered == false) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Button(
-                            onClick = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // TRUE
+                    Button(
+                        onClick = {
+                            if (isAnswered == false) {
+                                selectedAnswer = "TRUE"
                                 val isCorrect = checkAnswer(true, currentQuestion.correctAnswer)
-                                if (isCorrect) {
-                                    correctAnswersCount = correctAnswersCount + 1
-                                }
-                                isAnswered = true
-
-
-                                if (isLastQuestion) {
-                                    val message =
-                                        buildResultMessage(correctAnswersCount, questionList.size)
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(message)
-                                    }
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = purpleColor)
-                        ) {
-                            Text(text = "TRUE")
-                        }
-
-                        Button(
-                            onClick = {
-                                val isCorrect = checkAnswer(false, currentQuestion.correctAnswer)
-                                if (isCorrect) {
-                                    correctAnswersCount = correctAnswersCount + 1
-                                }
+                                if (isCorrect) correctAnswersCount += 1
                                 isAnswered = true
 
                                 if (isLastQuestion) {
                                     val message =
                                         buildResultMessage(correctAnswersCount, questionList.size)
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(message)
-                                    }
+                                    coroutineScope.launch { snackbarHostState.showSnackbar(message) }
                                 }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = purpleColor)
-                        ) {
-                            Text(text = "FALSE")
-                        }
-                    }
-                }
-
-                if (isAnswered == true && isLastQuestion == false) {
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedAnswer == "TRUE") lightPurple else purpleColor
+                        )
                     ) {
-                        Button(
-                            onClick = {
-                                currentQuestionIndex = currentQuestionIndex + 1
-                                isAnswered = false
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = purpleColor)
-                        ) {
-                            Text(text = "NEXT")
-                        }
+                        Text(text = "TRUE")
+                    }
+
+                    // FALSE
+                    Button(
+                        onClick = {
+                            if (isAnswered == false) {
+                                selectedAnswer = "FALSE"
+                                val isCorrect = checkAnswer(false, currentQuestion.correctAnswer)
+                                if (isCorrect) correctAnswersCount += 1
+                                isAnswered = true
+
+                                if (isLastQuestion) {
+                                    val message =
+                                        buildResultMessage(correctAnswersCount, questionList.size)
+                                    coroutineScope.launch { snackbarHostState.showSnackbar(message) }
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedAnswer == "FALSE") lightPurple else purpleColor
+                        )
+                    ) {
+                        Text(text = "FALSE")
                     }
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // ===== NEXT =====
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Button(
+                        onClick = {
+                            if (isAnswered && isLastQuestion == false) {
+                                currentQuestionIndex += 1
+                                isAnswered = false
+                                selectedAnswer = null
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = purpleColor)
+                    ) {
+                        Text(text = "NEXT")
+                    }
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = buildResultMessage(correctAnswersCount, questionList.size),
+                    fontSize = 14.sp,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
 
         SnackbarHost(hostState = snackbarHostState) { data ->
-            Snackbar {
-                Text(data.visuals.message)
+            Snackbar(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                containerColor = purpleColor,
+                contentColor = Color.White
+            ) {
+                Text(
+                    text = data.visuals.message,
+                    fontSize = 18.sp,
+                    modifier = Modifier.padding(8.dp)
+                )
             }
         }
     }
