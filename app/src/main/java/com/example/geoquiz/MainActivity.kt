@@ -30,6 +30,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,112 +49,145 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
-data class Question(val text: String, val correctAnswer: Boolean)
 
-val questionList = listOf(
-    Question("Canberra is the capital of Australia.", true),
-    Question("The Pacific Ocean is larger than the Atlantic Ocean.", true),
-    Question("The Suez Canal connects the Red Sea and the Indian Ocean.", false),
-    Question("The source of the Nile River is in Egypt.", false),
-    Question("The Amazon River is the longest river in the Americas.", true),
-    Question("Lake Baikal is the world's oldest and deepest freshwater lake.", true)
-)
-fun checkAnswer(userAnswer: Boolean, correctAnswer: Boolean): Boolean {
-    return userAnswer == correctAnswer
-}
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun GeoQuizScreen(innerPadding: Modifier) {
-    val purpleColor = Color(0xFF6200EE)
+    data class Question(val text: String, val correctAnswer: Boolean)
 
-    var currentQuestionIndex by remember { mutableStateOf(0) }
-    val currentQuestion = questionList[currentQuestionIndex]
-    var isAnswered by remember { mutableStateOf(false) }
-    var correctAnswersCount by remember { mutableStateOf(0) }
-    val isLastQuestion = currentQuestionIndex == questionList.size - 1
+    val questionList = listOf(
+        Question("Canberra is the capital of Australia.", true),
+        Question("The Pacific Ocean is larger than the Atlantic Ocean.", true),
+        Question("The Suez Canal connects the Red Sea and the Indian Ocean.", false),
+        Question("The source of the Nile River is in Egypt.", false),
+        Question("The Amazon River is the longest river in the Americas.", true),
+        Question("Lake Baikal is the world's oldest and deepest freshwater lake.", true)
+    )
 
-    Column(modifier = innerPadding.fillMaxSize()) {
-        TopAppBar(
-            title = { Text(text = "GeoQuiz") },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = purpleColor,
-                titleContentColor = Color.White
-            )
-        )
+    fun checkAnswer(userAnswer: Boolean, correctAnswer: Boolean): Boolean {
+        return userAnswer == correctAnswer
+    }
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-        ) {
-            Text(
-                text = currentQuestion.text,
-                fontSize = 16.sp,
-                modifier = Modifier.fillMaxWidth()
+    fun buildResultMessage(correctCount: Int, totalCount: Int): String {
+        return "Правильных ответов: " + correctCount + " из " + totalCount
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun GeoQuizScreen(innerPadding: Modifier) {
+        val purpleColor = Color(0xFF6200EE)
+
+        var currentQuestionIndex by remember { mutableStateOf(0) }
+        val currentQuestion = questionList[currentQuestionIndex]
+        var isAnswered by remember { mutableStateOf(false) }
+        var correctAnswersCount by remember { mutableStateOf(0) }
+        val isLastQuestion = currentQuestionIndex == questionList.size - 1
+
+        val snackbarHostState = remember { SnackbarHostState() }
+        val coroutineScope = rememberCoroutineScope()
+
+        Column(modifier = innerPadding.fillMaxSize()) {
+            TopAppBar(
+                title = { Text(text = "GeoQuiz") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = purpleColor,
+                    titleContentColor = Color.White
+                )
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+            ) {
+                Text(
+                    text = currentQuestion.text,
+                    fontSize = 16.sp,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-            if (isAnswered == false) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Button(
-                        onClick = {
-                            val isCorrect = checkAnswer(true, currentQuestion.correctAnswer)
-                            if (isCorrect) {
-                                correctAnswersCount = correctAnswersCount + 1
-                            }
-                            isAnswered = true
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = purpleColor)
-                    ) {
-                        Text(text = "TRUE")
-                    }
-
-                    Button(
-                        onClick = {
-                            val isCorrect = checkAnswer(false, currentQuestion.correctAnswer)
-                            if (isCorrect) {
-                                correctAnswersCount = correctAnswersCount + 1
-                            }
-                            isAnswered = true
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = purpleColor)
-                    ) {
-                        Text(text = "FALSE")
-                    }
-                }
-            }
-
-            if (isAnswered == true && isLastQuestion == false) {
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Button(
-                        onClick = {
-                            currentQuestionIndex = currentQuestionIndex + 1
-                            isAnswered = false
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = purpleColor)
+                if (isAnswered == false) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(text = "NEXT")
+                        Button(
+                            onClick = {
+                                val isCorrect = checkAnswer(true, currentQuestion.correctAnswer)
+                                if (isCorrect) {
+                                    correctAnswersCount = correctAnswersCount + 1
+                                }
+                                isAnswered = true
+
+
+                                if (isLastQuestion) {
+                                    val message =
+                                        buildResultMessage(correctAnswersCount, questionList.size)
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(message)
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = purpleColor)
+                        ) {
+                            Text(text = "TRUE")
+                        }
+
+                        Button(
+                            onClick = {
+                                val isCorrect = checkAnswer(false, currentQuestion.correctAnswer)
+                                if (isCorrect) {
+                                    correctAnswersCount = correctAnswersCount + 1
+                                }
+                                isAnswered = true
+
+                                if (isLastQuestion) {
+                                    val message =
+                                        buildResultMessage(correctAnswersCount, questionList.size)
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(message)
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = purpleColor)
+                        ) {
+                            Text(text = "FALSE")
+                        }
+                    }
+                }
+
+                if (isAnswered == true && isLastQuestion == false) {
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Button(
+                            onClick = {
+                                currentQuestionIndex = currentQuestionIndex + 1
+                                isAnswered = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = purpleColor)
+                        ) {
+                            Text(text = "NEXT")
+                        }
                     }
                 }
             }
         }
-    }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun GeoQuizScreenPreview() {
-    GeoquizTheme {
-        GeoQuizScreen(innerPadding = Modifier)
+        SnackbarHost(hostState = snackbarHostState) { data ->
+            Snackbar {
+                Text(data.visuals.message)
+            }
+        }
+    }
+
+    @Preview(showBackground = true)
+    @Composable
+    fun GeoQuizScreenPreview() {
+        GeoquizTheme {
+            GeoQuizScreen(innerPadding = Modifier)
+        }
     }
 }
